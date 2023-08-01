@@ -1,0 +1,19 @@
+version: '3.8'
+
+networks:
+  network_local:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:latest
+    restart: on-failure
+    container_name: db_local
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=rock_paper_scissors_db
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - '5432:5432'
+    networks:
+      - network_local

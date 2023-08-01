@@ -20,5 +20,4 @@
       <ProjectReference Include="..\RockPaperScissors.DAL\RockPaperScissors.DAL.csproj" />
     </ItemGroup>
 
-
 </Project>
