@@ -9,8 +9,17 @@ public static class GameExtensions
     {
         if (game is null)
         {
-            // todo game not found
             throw new GameNotFoundException();
+        }
+
+        return game;
+    }
+
+    public static Game EnsureHasState(this Game game, GameState expectedState)
+    {
+        if (game.State != (int) expectedState)
+        {
+            throw new GameHasInvalidStateException(expectedState, (GameState) game.State);
         }
 
         return game;

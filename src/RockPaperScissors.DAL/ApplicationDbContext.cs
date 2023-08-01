@@ -10,9 +10,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GameUser> GameUsers => Set<GameUser>();
     public DbSet<TurnGameUser> TurnGameUsers => Set<TurnGameUser>();
 
-    public ApplicationDbContext()
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbContextOptions) : base(dbContextOptions)
     {
-        
+        // Миграции лень подключать =)
+        Database.EnsureCreated();
     }
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken)

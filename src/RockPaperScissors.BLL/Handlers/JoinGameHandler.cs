@@ -27,17 +27,22 @@ public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
         var game = (await _applicationDbContext
                 .Games
                 .SingleOrDefaultAsync(g => g.Id == request.GameId, cancellationToken))
-            .EnsureNotNull();
+            .EnsureNotNull()
+            .EnsureHasState(GameState.WaitingOpponentToJoin);
 
-        await EnsureGameHasEmptySlot(game.Id, cancellationToken);
+        //await EnsureGameHasEmptySlot(game.Id, cancellationToken);
+
+        _applicationDbContext.GameUsers.Add(new GameUser { UserId = user.Id, GameId = game.Id });
         
-        _applicationDbContext.GameUsers.Add(new GameUser { UserId = user.Id, GameId = request.GameId });
+        game.State = (int) GameState.GameInProgress;
+        _applicationDbContext.Games.Update(game);
 
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
 
         return new JoinGameResult { UserId = user.Id };
     }
 
+    // todo remove
     private async Task EnsureGameHasEmptySlot(long gameId, CancellationToken cancellationToken)
     {
         var currentPlayersInGameCount = await _applicationDbContext
@@ -45,7 +50,7 @@ public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
             .CountAsync(
                 g => g.Id == gameId,
                 cancellationToken);
-
+        
         if (currentPlayersInGameCount == MaxPlayersInGameCount)
         {
             throw new GameDontHasEmptySlotException();

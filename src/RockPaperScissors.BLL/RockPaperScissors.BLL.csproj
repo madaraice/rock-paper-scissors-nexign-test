@@ -9,10 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Queries\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <PackageReference Include="MediatR" Version="12.1.1" />
     </ItemGroup>
 
@@ -23,5 +19,6 @@
     <ItemGroup>
       <ProjectReference Include="..\RockPaperScissors.DAL\RockPaperScissors.DAL.csproj" />
     </ItemGroup>
+
 
 </Project>
