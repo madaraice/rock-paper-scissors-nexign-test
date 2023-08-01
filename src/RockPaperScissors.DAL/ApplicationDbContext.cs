@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RockPaperScissors.DAL.Configuration;
 using RockPaperScissors.DAL.Models;
 
 namespace RockPaperScissors.DAL;
@@ -14,6 +15,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         // Миграции лень подключать =)
         Database.EnsureCreated();
+    }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new GameConfiguration());
+        modelBuilder.ApplyConfiguration(new GameUserConfiguration());
+        modelBuilder.ApplyConfiguration(new TurnGameUserConfiguration());
     }
     
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken)
