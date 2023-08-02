@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RockPaperScissors.BLL.Exceptions;
 using RockPaperScissors.BLL.Extensions;
 using RockPaperScissors.DAL;
 using RockPaperScissors.DAL.Models;
@@ -40,7 +39,6 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
             .TurnGameUsers
             .Where(tgu => tgu.GameUserId == gameUser.Id)
             .ToListAsync(cancellationToken);
-        //todo remove? EnsureGameNotEnded(userTurns);
         
         // todo проверить что юзер может делать ход (тип другой игрок уже походил)
         var opponentGameUser = await _applicationDbContext
@@ -79,6 +77,13 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
 
     private void EnsureUserMayMakeTurn(TurnGameUser? userMaxRound, TurnGameUser? opponentMaxRound)
     {
+        // Если это первый ход
+        if (userMaxRound is null 
+            && opponentMaxRound is null)
+        {
+            return;
+        }
+        
         // Если ОППОНЕНТ уже походил, а ЮЗЕР нет, то даем сделать ход 
         if (opponentMaxRound is not null 
             && userMaxRound is null)
@@ -90,6 +95,7 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
         if (userMaxRound is not null 
             && opponentMaxRound is null)
         {
+            // todo rename
             throw new Exception();
         }
         
@@ -99,15 +105,8 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
         var difference = userMaxRound!.RoundNumber - opponentMaxRound!.RoundNumber;
         if (difference >= 1)
         {
+            // todo rename
             throw new Exception();
-        }
-    }
-
-    private static void EnsureGameNotEnded(List<TurnGameUser> userTurns)
-    {
-        if (userTurns.Count + 1 == MaxRoundsCount)
-        {
-            throw new GameAlreadyEndedException();
         }
     }
 }
