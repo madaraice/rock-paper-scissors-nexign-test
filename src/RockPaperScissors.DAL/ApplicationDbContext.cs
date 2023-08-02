@@ -14,7 +14,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbContextOptions) : base(dbContextOptions)
     {
         // Миграции лень подключать =)
-        Database.EnsureDeleted();
         Database.EnsureCreated();
     }
     
