@@ -9,6 +9,5 @@ public class GameUserConfiguration : IEntityTypeConfiguration<GameUser>
     public void Configure(EntityTypeBuilder<GameUser> builder)
     {
         builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).UseHiLo();
     }
 }

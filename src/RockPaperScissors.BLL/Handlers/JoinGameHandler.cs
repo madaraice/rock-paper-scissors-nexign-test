@@ -20,6 +20,9 @@ public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
     public async Task<JoinGameResult> Handle(JoinGameCommand request, CancellationToken cancellationToken)
     {
         var user = await _userService.GetOrAdd(request.UserName, cancellationToken);
+        // Костыль: было мало времени на настройку связей между таблицами и нужно было чтобы айдишники инкрементнулись
+        // иначе бы в GameUsers записалось UserId 0
+        await _applicationDbContext.SaveChangesAsync(cancellationToken);
 
         var game = (await _applicationDbContext
                 .Games

@@ -27,6 +27,10 @@ public class CreateGameHandler : IRequestHandler<CreateGameCommand, CreateGameRe
             })
             .Entity;
 
+        // Костыль: было мало времени на настройку связей между таблицами и нужно было чтобы айдишники инкрементнулись
+        // иначе бы в GameUsers записалось UserId 0 GameId 0
+        await _applicationDbContext.SaveChangesAsync(cancellationToken);
+        
         _applicationDbContext.GameUsers.Add(new GameUser { UserId = user.Id, GameId = game.Id });
 
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
