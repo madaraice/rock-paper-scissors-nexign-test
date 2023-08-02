@@ -14,19 +14,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbContextOptions) : base(dbContextOptions)
     {
         // Миграции лень подключать =)
+        Database.EnsureDeleted();
         Database.EnsureCreated();
     }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Связи между таблицами намеренно не делаю тк было мало времени на реализацию =(
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new GameConfiguration());
         modelBuilder.ApplyConfiguration(new GameUserConfiguration());
         modelBuilder.ApplyConfiguration(new TurnGameUserConfiguration());
-    }
-    
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken)
-    {
-        return base.SaveChangesAsync(cancellationToken);
     }
 }

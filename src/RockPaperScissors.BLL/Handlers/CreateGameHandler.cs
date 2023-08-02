@@ -19,14 +19,11 @@ public class CreateGameHandler : IRequestHandler<CreateGameCommand, CreateGameRe
     {
         var user = await _userService.GetOrAdd(request.UserName, cancellationToken);
 
-        var utcNow = DateTimeOffset.UtcNow;
         var game = _applicationDbContext
             .Games
             .Add(new Game
             {
                 State = (int) GameState.WaitingOpponentToJoin,
-                CreatedAt = utcNow,
-                UpdatedAt = utcNow
             })
             .Entity;
 

@@ -1,5 +1,8 @@
-﻿namespace RockPaperScissors.BLL.Enums;
+﻿using System.Text.Json.Serialization;
 
+namespace RockPaperScissors.BLL.Enums;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Turn
 {
     Unknown = 0,

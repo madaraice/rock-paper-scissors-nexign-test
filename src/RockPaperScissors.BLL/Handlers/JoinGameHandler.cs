@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RockPaperScissors.BLL.Exceptions;
 using RockPaperScissors.BLL.Extensions;
 using RockPaperScissors.BLL.Services.Interfaces;
 using RockPaperScissors.DAL;
@@ -9,8 +8,6 @@ namespace RockPaperScissors.BLL.Handlers;
 
 public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
 {
-    private const int MaxPlayersInGameCount = 2;
-    
     private readonly IUserService _userService;
     private readonly IApplicationDbContext _applicationDbContext;
 
@@ -30,8 +27,6 @@ public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
             .EnsureNotNull()
             .EnsureHasState(GameState.WaitingOpponentToJoin);
 
-        //await EnsureGameHasEmptySlot(game.Id, cancellationToken);
-
         _applicationDbContext.GameUsers.Add(new GameUser { UserId = user.Id, GameId = game.Id });
         
         game.State = (int) GameState.GameInProgress;
@@ -40,20 +35,5 @@ public class JoinGameHandler : IRequestHandler<JoinGameCommand, JoinGameResult>
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
 
         return new JoinGameResult { UserId = user.Id };
-    }
-
-    // todo remove
-    private async Task EnsureGameHasEmptySlot(long gameId, CancellationToken cancellationToken)
-    {
-        var currentPlayersInGameCount = await _applicationDbContext
-            .GameUsers
-            .CountAsync(
-                g => g.Id == gameId,
-                cancellationToken);
-        
-        if (currentPlayersInGameCount == MaxPlayersInGameCount)
-        {
-            throw new GameDontHasEmptySlotException();
-        }
     }
 }

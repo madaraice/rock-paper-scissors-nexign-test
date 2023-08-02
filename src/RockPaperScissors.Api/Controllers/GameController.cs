@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.ComponentModel.DataAnnotations;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using RockPaperScissors.Api.Models.Responses;
 using RockPaperScissors.BLL.Commands;
@@ -20,10 +21,11 @@ public class GameController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet]
+    // Сохранил такие же контракты которые были в требованиях, наверно через body было бы логичнее передавать
+    [HttpPost]
     [Route("create")]
     public async Task<ActionResult<CreateGameResponse>> CreateGame(
-        [FromQuery(Name = "userName")] string userName,
+        [FromQuery(Name = "userName")] [Required] string userName,
         CancellationToken cancellationToken)
     {
         var command = new CreateGameCommand { UserName = userName };
@@ -37,7 +39,8 @@ public class GameController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet]
+    // Сохранил такие же контракты которые были в требованиях, наверно через body было бы логичнее передавать
+    [HttpPost]
     [Route("{gameId:long}/join/{userName}")]
     public async Task<ActionResult<JoinGameResponse>> JoinGame(
         [FromRoute] long gameId,
@@ -54,7 +57,8 @@ public class GameController : ControllerBase
         return Ok(response);
     }
     
-    [HttpGet]
+    // Сохранил такие же контракты которые были в требованиях, наверно через body было бы логичнее передавать
+    [HttpPost]
     [Route("{gameId:long}/user/{userId:long}/{turn}")]
     public async Task<IActionResult> MakeTurn(
         [FromRoute] long gameId,
