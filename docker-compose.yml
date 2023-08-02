@@ -5,6 +5,17 @@ networks:
     driver: bridge
 
 services:
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - '8080:80'
+#    environment:
+#      - ASPNETCORE_ENVIRONMENT=Local
+#    networks:
+#      - network_local
+  
   db:
     image: postgres:latest
     restart: on-failure
