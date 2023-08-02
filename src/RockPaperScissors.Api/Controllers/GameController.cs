@@ -80,6 +80,7 @@ public class GameController : ControllerBase
         var response = new GetGameStatsResponse
         {
             WinnerUserId = result.WinnerUserId,
+            WinnerUserName = result.WinnerUserName,
             FirstUserStats = result.FirstUserStats,
             SecondUserStats = result.SecondUserStats
         };

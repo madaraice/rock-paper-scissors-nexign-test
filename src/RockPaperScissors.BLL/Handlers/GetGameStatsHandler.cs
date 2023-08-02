@@ -27,47 +27,67 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
             .GameUsers
             .Where(gu => gu.GameId == game.Id)
             .Join(
-                _applicationDbContext.TurnGameUsers,
-                gameUser => gameUser.Id,
-                turnGameUser => turnGameUser.GameUserId,
-                (user, gameUser) => new UserStat
+                _applicationDbContext.Users,
+                gameUser => gameUser.UserId,
+                user => user.Id,
+                (gameUser, user) => new
                 {
-                    UserId = user.UserId,
-                    UserName = "",
-                    RoundNumber = gameUser.RoundNumber,
-                    Turn = (Turn) gameUser.Turn
+                    UserId = gameUser.UserId,
+                    UserName = user.UserName,
                 })
+            .Join(
+                _applicationDbContext.TurnGameUsers,
+                userInfo => userInfo.UserId,
+                turnGameUser => turnGameUser.GameUserId,
+                (userInfo, turnGameUser) => new UserStat
+                {
+                    UserId = userInfo.UserId,
+                    UserName = userInfo.UserName,
+                    RoundNumber = turnGameUser.RoundNumber,
+                    Turn = (Turn) turnGameUser.Turn
+                })
+            .OrderBy(us => us.RoundNumber)
             .ToListAsync(cancellationToken);
 
         var statsByUser = usersStats.ToLookup(us => us.UserId);
+        var firstUserStats = statsByUser.First();
+        var secondUserStats = statsByUser.Last();
 
-        var firstUserStats = statsByUser[0]
-            .Select((u, index) => new UserStatWithRoundResult
-            {
-                UserId = u.UserId,
-                UserName = u.UserName,
-                Turn = u.Turn,
-                RoundNumber = u.RoundNumber,
-                UserWinRound = GetRoundResult(u.Turn, statsByUser[1].ElementAt(index).Turn)
-            })
-            .ToArray();
-
-        var secondUserStats = statsByUser[1]
-            .Select((u, index) => new UserStatWithRoundResult
-            {
-                UserId = u.UserId,
-                UserName = u.UserName,
-                Turn = u.Turn,
-                RoundNumber = u.RoundNumber,
-                UserWinRound = GetRoundResult(u.Turn, statsByUser[0].ElementAt(index).Turn)
-            })
-            .ToArray();
-
+        var firstUserStatsWithRounds = new UserInfoWithRoundResult
+        {
+            UserId = firstUserStats.First().UserId,
+            UserName = firstUserStats.First().UserName,
+            RoundResults = firstUserStats
+                .Select((u, index) => new UserInfoWithRoundResult.RoundResultByUser
+                {
+                    Turn = u.Turn,
+                    RoundNumber = u.RoundNumber,
+                    RoundResult = GetRoundResult(u.Turn, secondUserStats.ElementAt(index).Turn)
+                })
+                .ToArray()
+        };
+        
+        var secondUserStatsWithRounds = new UserInfoWithRoundResult
+        {
+            UserId = secondUserStats.First().UserId,
+            UserName = secondUserStats.First().UserName,
+            RoundResults = secondUserStats
+                .Select((u, index) => new UserInfoWithRoundResult.RoundResultByUser
+                {
+                    Turn = u.Turn,
+                    RoundNumber = u.RoundNumber,
+                    RoundResult = GetRoundResult(u.Turn, firstUserStats.ElementAt(index).Turn)
+                })
+                .ToArray()
+        };
+        
+        var winner = GetWinner(firstUserStatsWithRounds, secondUserStatsWithRounds);
         return new GetGameStatsResult
         {
-            WinnerUserId = GetWinnerId(firstUserStats, secondUserStats),
-            FirstUserStats = firstUserStats,
-            SecondUserStats = secondUserStats
+            WinnerUserId = winner?.UserId,
+            WinnerUserName = winner?.UserName,
+            FirstUserStats = firstUserStatsWithRounds,
+            SecondUserStats = secondUserStatsWithRounds
         };
     }
 
@@ -94,10 +114,10 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
         };
     }
     
-    private static long? GetWinnerId(UserStatWithRoundResult[] firstUserStats, UserStatWithRoundResult[] secondUserStats)
+    private static UserInfoWithRoundResult? GetWinner(UserInfoWithRoundResult firstUserStats, UserInfoWithRoundResult secondUserStats)
     {
-        var firstUserWinsCount = firstUserStats.Count(u => u.UserWinRound is RoundResult.Win);
-        var secondUserWinsCount = secondUserStats.Count(u => u.UserWinRound is RoundResult.Win);
+        var firstUserWinsCount = firstUserStats.RoundResults.Count(u => u.RoundResult is RoundResult.Win);
+        var secondUserWinsCount = secondUserStats.RoundResults.Count(u => u.RoundResult is RoundResult.Win);
 
         if (firstUserWinsCount == secondUserWinsCount)
         {
@@ -105,7 +125,7 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
         }
 
         return firstUserWinsCount > secondUserWinsCount
-            ? firstUserStats[0].UserId
-            : secondUserStats[0].UserId;
+            ? firstUserStats
+            : secondUserStats;
     }
 }
