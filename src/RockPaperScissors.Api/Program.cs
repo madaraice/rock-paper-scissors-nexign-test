@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RockPaperScissors.Api.Middlewares;
 using RockPaperScissors.BLL.Commands;
 using RockPaperScissors.BLL.Services;
 using RockPaperScissors.BLL.Services.Interfaces;
@@ -24,6 +25,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseMiddleware<BusinessExceptionMiddleware>();
 
 app.UseAuthorization();
 
