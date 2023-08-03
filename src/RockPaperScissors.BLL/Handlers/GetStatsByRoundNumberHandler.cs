@@ -7,43 +7,50 @@ using RockPaperScissors.DAL.Models;
 
 namespace RockPaperScissors.BLL.Handlers;
 
-public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameStatsResult>
+public class GetStatsByRoundNumberHandler : IRequestHandler<GetStatsByRoundNumberQuery, GetStatsByRoundNumberResult>
 {
+    private readonly GameState[] _validGameStates = { GameState.GameInProgress, GameState.GameEnded };
+    
     private readonly IApplicationDbContext _applicationDbContext;
 
-    public GetGameStatsHandler(IApplicationDbContext applicationDbContext)
+    public GetStatsByRoundNumberHandler(IApplicationDbContext applicationDbContext)
     {
         _applicationDbContext = applicationDbContext;
     }
-    
-    public async Task<GetGameStatsResult> Handle(GetGameStatsQuery request, CancellationToken cancellationToken)
+
+    public async Task<GetStatsByRoundNumberResult> Handle(
+        GetStatsByRoundNumberQuery request,
+        CancellationToken cancellationToken)
     {
         var game = (await _applicationDbContext
                 .Games
                 .SingleOrDefaultAsync(g => g.Id == request.GameId, cancellationToken))
             .EnsureNotNull()
-            .EnsureHasState(GameState.GameEnded);
+            .EnsureHasStates(_validGameStates);
 
-        var usersStats = await GetUsersStats(game, cancellationToken);
-
-        var statsByUser = usersStats.ToLookup(us => us.UserId);
+        var usersStatsByRound = await GetUsersStatsByRound(request, game, cancellationToken);
+        
+        var statsByUser = usersStatsByRound.ToLookup(us => us.UserId);
         var firstUserStats = statsByUser.First();
         var secondUserStats = statsByUser.Last();
 
-        var firstUserStatsWithRounds = GetUserInfoWithRoundResult(firstUserStats, secondUserStats);
-        var secondUserStatsWithRounds = GetUserInfoWithRoundResult(secondUserStats, firstUserStats);
+        var firstUserStatsWithRound = GetUserInfoWithRoundResult(firstUserStats, secondUserStats);
+        var secondUserStatsWithRound = GetUserInfoWithRoundResult(secondUserStats, firstUserStats);
         
-        var winner = GetWinner(firstUserStatsWithRounds, secondUserStatsWithRounds);
-        return new GetGameStatsResult
+        var winner = GetWinner(firstUserStatsWithRound, secondUserStatsWithRound);
+        return new GetStatsByRoundNumberResult
         {
             WinnerUserId = winner?.UserId,
             WinnerUserName = winner?.UserName,
-            FirstUserStats = firstUserStatsWithRounds,
-            SecondUserStats = secondUserStatsWithRounds
+            FirstUserStats = firstUserStatsWithRound,
+            SecondUserStats = secondUserStatsWithRound
         };
     }
 
-    private Task<List<UserStat>> GetUsersStats(Game game, CancellationToken cancellationToken)
+    private Task<List<UserStat>> GetUsersStatsByRound(
+        GetStatsByRoundNumberQuery request,
+        Game game,
+        CancellationToken cancellationToken)
     {
         return _applicationDbContext
             .GameUsers
@@ -52,11 +59,7 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
                 _applicationDbContext.Users,
                 gameUser => gameUser.UserId,
                 user => user.Id,
-                (gameUser, user) => new
-                {
-                    UserId = gameUser.UserId,
-                    UserName = user.UserName,
-                })
+                (gameUser, user) => new { UserId = gameUser.UserId, UserName = user.UserName, })
             .Join(
                 _applicationDbContext.TurnGameUsers,
                 userInfo => userInfo.UserId,
@@ -66,13 +69,13 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
                     UserId = userInfo.UserId,
                     UserName = userInfo.UserName,
                     RoundNumber = turnGameUser.RoundNumber,
-                    Turn = (Turn) turnGameUser.Turn
+                    Turn = (Turn)turnGameUser.Turn
                 })
-            .OrderBy(us => us.RoundNumber)
+            .Where(us => us.RoundNumber == request.RoundNumber)
             .ToListAsync(cancellationToken);
     }
-
-    private static UserInfoWithRoundResult GetUserInfoWithRoundResult(
+    
+        private static UserInfoWithRoundResult GetUserInfoWithRoundResult(
         IGrouping<long, UserStat> userStats,
         IGrouping<long, UserStat> opponentStats)
     {
@@ -130,4 +133,5 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
             ? firstUserStats
             : secondUserStats;
     }
+
 }

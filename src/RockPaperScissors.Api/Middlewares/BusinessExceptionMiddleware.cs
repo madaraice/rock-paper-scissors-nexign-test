@@ -45,7 +45,8 @@ public class BusinessExceptionMiddleware
         return exception switch
         {
             GameNotFoundException => "Игра не найдена",
-            GameHasInvalidStateException e => $"Для текущего действия ожидалось состояние игры {e.ExpectedState.ToString()}, текущее состояние {e.ActualState.ToString()}",
+            GameHasInvalidStateException e => $"Для текущего действия ожидалось состояние игры {e.ExpectedState}, текущее состояние {e.ActualState}",
+            GameHasInvalidStatesException e => $"Для текущего действия ожидалось одно из состояний игры: {string.Join(", ", e.ExpectedStates)}, текущее состояние {e.ActualState.ToString()}",
             UserNotFoundException => "Юзер не найден",
             UserNotJoinedInGameException => "Юзер не присоединился к переданной игре",
             WaitNextTurnException => "Жди следующего хода, оппонент еще не сделал ход",

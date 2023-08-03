@@ -88,4 +88,24 @@ public class GameController : ControllerBase
         };
         return Ok(response);
     }
+    
+    [HttpGet]
+    [Route("{gameId:long}/stat/{roundNumber:int}")]
+    public async Task<ActionResult<GetStatsByRoundNumberResponse>> GetStatsByRoundNumber(
+        [FromRoute] long gameId,
+        [FromRoute] int roundNumber,
+        CancellationToken cancellationToken)
+    {
+        var command = new GetStatsByRoundNumberQuery { GameId = gameId, RoundNumber = roundNumber };
+        var result = await _mediator.Send(command, cancellationToken);
+
+        var response = new GetStatsByRoundNumberResponse
+        {
+            WinnerUserId = result.WinnerUserId,
+            WinnerUserName = result.WinnerUserName,
+            FirstUserStats = result.FirstUserStats,
+            SecondUserStats = result.SecondUserStats
+        };
+        return Ok(response);
+    }
 }

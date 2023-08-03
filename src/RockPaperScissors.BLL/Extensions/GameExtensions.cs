@@ -24,4 +24,14 @@ public static class GameExtensions
 
         return game;
     }
+
+    public static Game EnsureHasStates(this Game game, GameState[] expectedStates)
+    {
+        if (!expectedStates.Contains((GameState) game.State))
+        {
+            throw new GameHasInvalidStatesException(expectedStates, (GameState) game.State);
+        }
+
+        return game;
+    }
 }
