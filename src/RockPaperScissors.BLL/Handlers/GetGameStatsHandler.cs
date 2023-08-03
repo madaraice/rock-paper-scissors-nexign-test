@@ -3,6 +3,7 @@ using RockPaperScissors.BLL.Extensions;
 using RockPaperScissors.BLL.Model;
 using RockPaperScissors.BLL.Queries;
 using RockPaperScissors.DAL;
+using RockPaperScissors.DAL.Models;
 
 namespace RockPaperScissors.BLL.Handlers;
 
@@ -23,7 +24,28 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
             .EnsureNotNull()
             .EnsureHasState(GameState.GameEnded);
 
-        var usersStats = await _applicationDbContext
+        var allUsersStats = await GetUserStats(game, cancellationToken);
+
+        var statsByUser = allUsersStats.ToLookup(us => us.UserId);
+        var firstUserStats = statsByUser.First();
+        var secondUserStats = statsByUser.Last();
+
+        var firstUserStatsWithRounds = GetUserInfoWithRoundResult(firstUserStats, secondUserStats);
+        var secondUserStatsWithRounds = GetUserInfoWithRoundResult(secondUserStats, firstUserStats);
+        
+        var winner = GetWinner(firstUserStatsWithRounds, secondUserStatsWithRounds);
+        return new GetGameStatsResult
+        {
+            WinnerUserId = winner?.UserId,
+            WinnerUserName = winner?.UserName,
+            FirstUserStats = firstUserStatsWithRounds,
+            SecondUserStats = secondUserStatsWithRounds
+        };
+    }
+
+    private Task<List<UserStat>> GetUserStats(Game game, CancellationToken cancellationToken)
+    {
+        return _applicationDbContext
             .GameUsers
             .Where(gu => gu.GameId == game.Id)
             .Join(
@@ -48,49 +70,29 @@ public class GetGameStatsHandler : IRequestHandler<GetGameStatsQuery, GetGameSta
                 })
             .OrderBy(us => us.RoundNumber)
             .ToListAsync(cancellationToken);
-
-        var statsByUser = usersStats.ToLookup(us => us.UserId);
-        var firstUserStats = statsByUser.First();
-        var secondUserStats = statsByUser.Last();
-
-        var firstUserStatsWithRounds = new UserInfoWithRoundResult
-        {
-            UserId = firstUserStats.First().UserId,
-            UserName = firstUserStats.First().UserName,
-            RoundResults = firstUserStats
-                .Select((u, index) => new UserInfoWithRoundResult.RoundResultByUser
-                {
-                    Turn = u.Turn,
-                    RoundNumber = u.RoundNumber,
-                    RoundResult = GetRoundResult(u.Turn, secondUserStats.ElementAt(index).Turn)
-                })
-                .ToArray()
-        };
-        
-        var secondUserStatsWithRounds = new UserInfoWithRoundResult
-        {
-            UserId = secondUserStats.First().UserId,
-            UserName = secondUserStats.First().UserName,
-            RoundResults = secondUserStats
-                .Select((u, index) => new UserInfoWithRoundResult.RoundResultByUser
-                {
-                    Turn = u.Turn,
-                    RoundNumber = u.RoundNumber,
-                    RoundResult = GetRoundResult(u.Turn, firstUserStats.ElementAt(index).Turn)
-                })
-                .ToArray()
-        };
-        
-        var winner = GetWinner(firstUserStatsWithRounds, secondUserStatsWithRounds);
-        return new GetGameStatsResult
-        {
-            WinnerUserId = winner?.UserId,
-            WinnerUserName = winner?.UserName,
-            FirstUserStats = firstUserStatsWithRounds,
-            SecondUserStats = secondUserStatsWithRounds
-        };
     }
 
+    private static UserInfoWithRoundResult GetUserInfoWithRoundResult(
+        IGrouping<long, UserStat> userStats,
+        IGrouping<long, UserStat> opponentStats)
+    {
+        var userStat = userStats.First();
+
+        return new UserInfoWithRoundResult
+        {
+            UserId = userStat.UserId,
+            UserName = userStat.UserName,
+            RoundResults = userStats
+                .Select((u, index) => new UserInfoWithRoundResult.RoundResultByUser
+                {
+                    Turn = u.Turn,
+                    RoundNumber = u.RoundNumber,
+                    RoundResult = GetRoundResult(u.Turn, opponentStats.ElementAt(index).Turn)
+                })
+                .ToArray()
+        };
+    }
+    
     private static RoundResult GetRoundResult(Turn firstUserTurn, Turn secondUserTurn)
     {
         if (firstUserTurn == secondUserTurn)

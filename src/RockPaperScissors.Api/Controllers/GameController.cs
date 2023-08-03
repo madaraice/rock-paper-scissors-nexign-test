@@ -13,12 +13,10 @@ namespace RockPaperScissors.Api.Controllers;
 public class GameController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<GameController> _logger;
 
     public GameController(IMediator mediator, ILogger<GameController> logger)
     {
         _mediator = mediator;
-        _logger = logger;
     }
 
     // Сохранил такие же контракты которые были в требованиях, наверно через body было бы логичнее передавать
