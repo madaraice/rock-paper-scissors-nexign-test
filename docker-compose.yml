@@ -1,0 +1,32 @@
+version: '3.8'
+
+networks:
+  network_local:
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8080:80'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Local
+    depends_on:
+      - db
+    networks:
+      - network_local
+  
+  db:
+    image: postgres:latest
+    restart: on-failure
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=rock_paper_scissors_db
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - '5432:5432'
+    networks:
+      - network_local
