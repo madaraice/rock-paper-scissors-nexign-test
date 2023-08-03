@@ -1,6 +1,6 @@
 ﻿namespace RockPaperScissors.BLL.Commands;
 
-public record MakeTurnCommand : IRequest
+public record MakeTurnCommand : IRequest<EmptyResult>
 {
     public required long GameId { get; init; }
     public required long UserId { get; init; }

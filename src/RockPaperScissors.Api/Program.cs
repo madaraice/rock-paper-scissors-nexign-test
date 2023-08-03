@@ -1,14 +1,21 @@
+using FluentValidation;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RockPaperScissors.Api.Middlewares;
 using RockPaperScissors.BLL.Commands;
+using RockPaperScissors.BLL.Pipelines;
 using RockPaperScissors.BLL.Services;
 using RockPaperScissors.BLL.Services.Interfaces;
+using RockPaperScissors.BLL.Validators;
 using RockPaperScissors.DAL;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateGameCommand).Assembly));
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+builder.Services.AddValidatorsFromAssembly(typeof(CreateGameCommandValidator).Assembly);
 
 builder.Services.AddTransient<IUserService, UserService>();
 
@@ -27,6 +34,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseMiddleware<BusinessExceptionMiddleware>();
+app.UseMiddleware<ValidationExceptionMiddleware>();
 
 app.UseAuthorization();
 
