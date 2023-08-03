@@ -6,7 +6,7 @@ using RockPaperScissors.DAL.Models;
 
 namespace RockPaperScissors.BLL.Handlers;
 
-public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
+public class MakeTurnHandler : IRequestHandler<MakeTurnCommand, EmptyResult>
 {
     private const int MaxRoundsCount = 5;
 
@@ -17,28 +17,14 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
         _applicationDbContext = applicationDbContext;
     }
 
-    public async Task Handle(MakeTurnCommand request, CancellationToken cancellationToken)
+    public async Task<EmptyResult> Handle(MakeTurnCommand request, CancellationToken cancellationToken)
     {
-        var user = (await _applicationDbContext
-                .Users
-                .SingleOrDefaultAsync(u => u.Id == request.UserId, cancellationToken))
-            .EnsureNotNull();
-
-        var game = (await _applicationDbContext
-                .Games
-                .SingleOrDefaultAsync(g => g.Id == request.GameId, cancellationToken))
-            .EnsureNotNull()
-            .EnsureHasState(GameState.GameInProgress);
+        var (user, game) = await ValidateRequest(request, cancellationToken);
 
         var gameUser = (await _applicationDbContext
                 .GameUsers
                 .SingleOrDefaultAsync(gm => gm.GameId == game.Id && gm.UserId == user.Id, cancellationToken))
             .EnsureNotNull();
-
-        var userTurns = await _applicationDbContext
-            .TurnGameUsers
-            .Where(tgu => tgu.GameUserId == gameUser.Id)
-            .ToListAsync(cancellationToken);
         
         var opponentGameUser = await _applicationDbContext
             .GameUsers
@@ -48,6 +34,11 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
             .Where(tgu => tgu.GameUserId == opponentGameUser.Id)
             .ToListAsync(cancellationToken: cancellationToken);
 
+        var userTurns = await _applicationDbContext
+            .TurnGameUsers
+            .Where(tgu => tgu.GameUserId == gameUser.Id)
+            .ToListAsync(cancellationToken);
+        
         // Нельзя давать делать ход пока раунд не закончился
         // Возможно можно было бы разрулить через статусы но у меня было мало времени на реализацию
         EnsureUserMayMakeTurn(
@@ -71,6 +62,24 @@ public class MakeTurnHandler : IRequestHandler<MakeTurnCommand>
         }
 
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
+
+        return new EmptyResult();
+    }
+
+    private async Task<(User user, Game game)> ValidateRequest(MakeTurnCommand request, CancellationToken cancellationToken)
+    {
+        var user = (await _applicationDbContext
+                .Users
+                .SingleOrDefaultAsync(u => u.Id == request.UserId, cancellationToken))
+            .EnsureNotNull();
+
+        var game = (await _applicationDbContext
+                .Games
+                .SingleOrDefaultAsync(g => g.Id == request.GameId, cancellationToken))
+            .EnsureNotNull()
+            .EnsureHasState(GameState.GameInProgress);
+
+        return (user, game);
     }
 
     private static void EnsureUserMayMakeTurn(TurnGameUser? userMaxRound, TurnGameUser? opponentMaxRound)
